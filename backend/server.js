@@ -1,9 +1,19 @@
 require('dotenv').config();
-const express = require('express'); 
-const mongoose = require('mongoose'); 
-const cors = require('cors'); 
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+
 const app = express();
-app.use(express.json()); 
-app.use(cors());
-mongoose.connect(process.env.MONGO_URI).then(() => console.log(' MongoDB connecté')).catch((err) => console.error(' Erreur MongoDB:', err));
-const PORT = process.env.PORT || 5000; app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));
+app.use(express.json());
+app.use(cors()); // pense à restreindre l'origine plus tard (voir remarque en bas)
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connecté'))
+  .catch((err) => console.error('Erreur MongoDB:', err));
+
+// --- AJOUTE CETTE LIGNE ---
+app.use('/api/groupes', require('./routes/groupes'));
+// ---------------------------
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));
