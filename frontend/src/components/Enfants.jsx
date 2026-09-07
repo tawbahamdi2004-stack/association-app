@@ -1,51 +1,87 @@
 import { useState, useEffect } from 'react';
-import { API_URL } from '../config';
+import { useNavigate } from 'react-router-dom';
+import { API_URL, getHeaders } from '../config';
 
-export default function Enfants({ groupeId }) {
+export default function Enfants() {
   const [enfants, setEnfants] = useState([]);
-  const [nom, setNom] = useState('');
-  const [telephone, setTelephone] = useState('');
+  const [form, setForm] = useState({ nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '' });
+  const navigate = useNavigate();
 
-  useEffect(() => { if (groupeId) chargerEnfants(); }, [groupeId]);
+  useEffect(() => {
+    fetch(`${API_URL}/api/enfants`, { headers: getHeaders() })
+      .then(res => res.json())
+      .then(setEnfants);
+  }, []);
 
-  const chargerEnfants = async () => {
-    const res = await fetch(`${API_URL}/api/enfants?groupeId=${groupeId}`);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await fetch(`${API_URL}/api/enfants`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(form)
+    });
+    setForm({ nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '' });
+    const res = await fetch(`${API_URL}/api/enfants`, { headers: getHeaders() });
     setEnfants(await res.json());
   };
 
-  const ajouterEnfant = async (e) => {
-    e.preventDefault();
-    await fetch(`${API_URL}/api/enfants`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, telephone, groupe: groupeId })
-    });
-    setNom(''); setTelephone('');
-    chargerEnfants();
-  };
-
-  const supprimerEnfant = async (id) => {
+  const supprimer = async (id) => {
     if (confirm('Supprimer cet enfant ?')) {
-      await fetch(`${API_URL}/api/enfants/${id}`, { method: 'DELETE' });
-      chargerEnfants();
+      await fetch(`${API_URL}/api/enfants/${id}`, { method: 'DELETE', headers: getHeaders() });
+      setEnfants(enfants.filter(e => e._id !== id));
     }
   };
 
   return (
-    <div>
-      <h3>👶 Enfants du groupe</h3>
-      <form onSubmit={ajouterEnfant} style={{ marginBottom: '1rem', display: 'flex', gap: '10px' }}>
-        <input placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required style={{ padding: '8px' }} />
-        <input placeholder="Téléphone" value={telephone} onChange={e => setTelephone(e.target.value)} required style={{ padding: '8px' }} />
-        <button type="submit" style={{ padding: '8px 15px', cursor: 'pointer' }}>Ajouter</button>
+    <div style={{ padding: '20px' }}>
+      <button onClick={() => navigate('/')} style={{ marginBottom: '20px' }}>← Retour</button>
+      <h1>👧 Gestion des Enfants</h1>
+      
+      <form onSubmit={handleSubmit} style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '10px' }}>
+        <h3>Nouvel Enfant</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <input placeholder="Nom" value={form.nom} onChange={e => setForm({...form, nom: e.target.value})} required style={inputStyle} />
+          <input placeholder="Prénom" value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} required style={inputStyle} />
+          <input placeholder="Téléphone" value={form.telephone} onChange={e => setForm({...form, telephone: e.target.value})} required style={inputStyle} />
+          <input type="date" value={form.dateNaissance} onChange={e => setForm({...form, dateNaissance: e.target.value})} style={inputStyle} />
+          <input placeholder="Adresse" value={form.adresse} onChange={e => setForm({...form, adresse: e.target.value})} style={{ ...inputStyle, gridColumn: '1 / -1' }} />
+        </div>
+        <button type="submit" style={{ marginTop: '10px', padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Ajouter l'enfant
+        </button>
       </form>
-      <ul>
-        {enfants.map(e => (
-          <li key={e._id} style={{ marginBottom: '8px' }}>
-            {e.nom} - {e.telephone}
-            <button onClick={() => supprimerEnfant(e._id)} style={{ marginLeft: '10px', color: 'red', cursor: 'pointer' }}>X</button>
-          </li>
-        ))}
-      </ul>
+
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#f8f9fa' }}>
+            <th style={thStyle}>Nom</th>
+            <th style={thStyle}>Prénom</th>
+            <th style={thStyle}>Téléphone</th>
+            <th style={thStyle}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {enfants.map(e => (
+            <tr key={e._id} style={{ borderBottom: '1px solid #eee' }}>
+              <td style={tdStyle}>{e.nom}</td>
+              <td style={tdStyle}>{e.prenom}</td>
+              <td style={tdStyle}>{e.telephone}</td>
+              <td style={tdStyle}>
+                <button onClick={() => navigate(`/enfants/${e._id}`)} style={{ marginRight: '5px', padding: '5px 10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>
+                  Voir
+                </button>
+                <button onClick={() => supprimer(e._id)} style={{ padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>
+                  Supprimer
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
+
+const inputStyle = { padding: '8px', border: '1px solid #ddd', borderRadius: '5px' };
+const thStyle = { padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' };
+const tdStyle = { padding: '10px' };

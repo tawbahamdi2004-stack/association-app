@@ -1,24 +1,59 @@
 const express = require('express');
 const router = express.Router();
 const Enfant = require('../models/Enfant');
+const Affectation = require('../models/Affectation');
+const auth = require('../middleware/auth');
 
-router.post('/', async (req, res) => {
-  try { res.status(201).json(await new Enfant(req.body).save()); } 
-  catch (err) { res.status(400).json({ message: err.message }); }
-});
-
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
-    const filter = req.query.groupeId ? { groupe: req.query.groupeId } : {};
-    res.json(await Enfant.find(filter).populate('groupe', 'nom'));
-  } catch (err) { res.status(500).json({ message: err.message }); }
+    const enfants = await Enfant.find().sort({ createdAt: -1 });
+    res.json(enfants);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-router.delete('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const enfant = await Enfant.findById(req.params.id);
+    if (!enfant) return res.status(404).json({ message: 'Enfant non trouvé' });
+    
+    const affectations = await Affectation.find({ enfant: req.params.id })
+      .populate('groupe', 'nom activite dateDebut dateFin');
+    
+    res.json({ enfant, affectations });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/', auth, async (req, res) => {
+  try {
+    const enfant = new Enfant(req.body);
+    await enfant.save();
+    res.status(201).json(enfant);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const enfant = await Enfant.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(enfant);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.delete('/:id', auth, async (req, res) => {
   try {
     await Enfant.findByIdAndDelete(req.params.id);
+    await Affectation.deleteMany({ enfant: req.params.id });
     res.json({ message: 'Enfant supprimé' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

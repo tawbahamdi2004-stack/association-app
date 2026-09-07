@@ -1,69 +1,83 @@
 import { useState, useEffect } from 'react';
-import { API_URL } from '../config';
+import { API_URL, getHeaders } from '../config';
 
-export default function Presences({ groupeId }) {
-  const [enfants, setEnfants] = useState([]);
+export default function Presences() {
+  const [groupes, setGroupes] = useState([]);
+  const [groupeId, setGroupeId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [enfants, setEnfants] = useState([]);
   const [presences, setPresences] = useState({});
 
   useEffect(() => {
+    fetch(`${API_URL}/api/groupes`, { headers: getHeaders() })
+      .then(res => res.json())
+      .then(setGroupes);
+  }, []);
+
+  useEffect(() => {
     if (groupeId) {
-      chargerEnfants();
-      chargerPresences();
+      Promise.all([
+        fetch(`${API_URL}/api/presences/enfants/${groupeId}`, { headers: getHeaders() }).then(r => r.json()),
+        fetch(`${API_URL}/api/presences?groupeId=${groupeId}&date=${date}`, { headers: getHeaders() }).then(r => r.json())
+      ]).then(([enfantsData, presencesData]) => {
+        setEnfants(enfantsData);
+        const init = {};
+        enfantsData.forEach(e => { init[e._id] = true; });
+        presencesData.forEach(p => { init[p.enfant._id] = p.present; });
+        setPresences(init);
+      });
     }
   }, [groupeId, date]);
-
-  const chargerEnfants = async () => {
-    const res = await fetch(`${API_URL}/api/enfants?groupeId=${groupeId}`);
-    const data = await res.json();
-    setEnfants(data);
-    const init = {};
-    data.forEach(e => { init[e._id] = true; });
-    setPresences(init);
-  };
-
-  const chargerPresences = async () => {
-    const res = await fetch(`${API_URL}/api/presences?groupeId=${groupeId}&date=${date}`);
-    const data = await res.json();
-    const newPresences = { ...presences };
-    data.forEach(p => { newPresences[p.enfant._id] = p.present; });
-    setPresences(newPresences);
-  };
 
   const togglePresence = (enfantId) => {
     setPresences(prev => ({ ...prev, [enfantId]: !prev[enfantId] }));
   };
 
-  const enregistrerPresences = async () => {
+  const enregistrer = async () => {
     const payloadArray = Object.entries(presences).map(([enfantId, present]) => ({ enfantId, present }));
     await fetch(`${API_URL}/api/presences`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: getHeaders(),
       body: JSON.stringify({ groupeId, date, presences: payloadArray })
     });
-    alert('✅ Présences enregistrées avec succès !');
+    alert('✅ Présences enregistrées !');
   };
 
   return (
-    <div>
-      <h3>📋 Présences</h3>
-      <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '8px', marginBottom: '15px' }} />
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {enfants.map(e => (
-          <li key={e._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #eee' }}>
-            <span>{e.nom}</span>
-            <button onClick={() => togglePresence(e._id)} style={{ 
-              padding: '8px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer',
-              backgroundColor: presences[e._id] ? '#d4edda' : '#f8d7da',
-              color: presences[e._id] ? '#155724' : '#721c24'
-            }}>
-              {presences[e._id] ? 'Présent ✅' : 'Absent ❌'}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <button onClick={enregistrerPresences} style={{ marginTop: '15px', padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-        Enregistrer les présences
-      </button>
+    <div style={{ padding: '20px' }}>
+      <h1>📅 Gestion des Présences</h1>
+      
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <select value={groupeId} onChange={e => setGroupeId(e.target.value)} style={{ flex: 1, padding: '10px' }}>
+          <option value="">Sélectionner un groupe</option>
+          {groupes.map(g => (
+            <option key={g._id} value={g._id}>{g.nom} - {g.activite}</option>
+          ))}
+        </select>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '10px' }} />
+      </div>
+
+      {groupeId && (
+        <>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {enfants.map(e => (
+              <li key={e._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', borderBottom: '1px solid #eee' }}>
+                <span><strong>{e.prenom} {e.nom}</strong></span>
+                <button onClick={() => togglePresence(e._id)} style={{ 
+                  padding: '10px 20px', borderRadius: '5px', border: 'none', cursor: 'pointer',
+                  backgroundColor: presences[e._id] ? '#d4edda' : '#f8d7da',
+                  color: presences[e._id] ? '#155724' : '#721c24'
+                }}>
+                  {presences[e._id] ? '✅ Présent' : '❌ Absent'}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button onClick={enregistrer} style={{ marginTop: '20px', padding: '12px 30px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px' }}>
+            Enregistrer les présences
+          </button>
+        </>
+      )}
     </div>
   );
 }
