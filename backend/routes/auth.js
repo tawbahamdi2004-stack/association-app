@@ -3,18 +3,6 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Inscription
-router.post('/register', async (req, res) => {
-  try {
-    const { nom, email, motDePasse } = req.body;
-    const user = new User({ nom, email, motDePasse });
-    await user.save();
-    res.status(201).json({ message: 'Utilisateur créé' });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
 // Connexion
 router.post('/login', async (req, res) => {
   try {
@@ -49,8 +37,9 @@ router.post('/create-admin', async (req, res) => {
     await user.save();
     res.json({ message: '✅ Admin créé avec succès !', email: 'admin@association.com' });
   } catch (err) {
-    res.status(400).json({ message: 'Erreur (peut-être que l\'email existe déjà): ' + err.message });
+    res.status(400).json({ message: 'Erreur (l\'email existe peut-être déjà): ' + err.message });
   }
 });
 // ----------------------------------------------------
+
 module.exports = router;
