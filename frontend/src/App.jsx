@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { useContext } from 'react';
 import Login from './components/Login';
+import Landing from './components/Landing';
 import Dashboard from './components/Dashboard';
 import Enfants from './components/Enfants';
 import EnfantDetail from './components/EnfantDetail';
@@ -21,8 +22,9 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/enfants" element={<ProtectedRoute><Enfants /></ProtectedRoute>} />
           <Route path="/enfants/:id" element={<ProtectedRoute><EnfantDetail /></ProtectedRoute>} />
           <Route path="/groupes" element={<ProtectedRoute><Groupes /></ProtectedRoute>} />
