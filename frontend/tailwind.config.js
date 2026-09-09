@@ -4,14 +4,16 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  theme: {
-    extend: {
-      colors: {
-        primary: '#4F46E5',
-        secondary: '#10B981',
-        danger: '#EF4444',
-      }
+theme: {
+  extend: {
+    fontFamily: {
+      arabic: ['Cairo', 'sans-serif'],
     },
+    colors: {
+      primary: '#059669', // Emerald 600
+      secondary: '#0D9488', // Teal 600
+    }
   },
+},
   plugins: [],
 }

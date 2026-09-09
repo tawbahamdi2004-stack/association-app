@@ -23,8 +23,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/login" element={<Login />} />          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/enfants" element={<ProtectedRoute><Enfants /></ProtectedRoute>} />
           <Route path="/enfants/:id" element={<ProtectedRoute><EnfantDetail /></ProtectedRoute>} />
           <Route path="/groupes" element={<ProtectedRoute><Groupes /></ProtectedRoute>} />
