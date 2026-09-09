@@ -10,25 +10,24 @@ export default function Login() {
   const [chargement, setChargement] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('🔵 Tentative de connexion...');
-    console.log('📡 URL API:', API_URL);
-    console.log('📧 Email:', email);
-    
+    e.preventDefault(); // Empêche le rechargement naturel de la page
+    console.log('🔵 Soumission du formulaire...');
     setErreur('');
     setChargement(true);
     
     try {
       const result = await login(email, motDePasse);
-      console.log('✅ Connexion réussie:', result);
-      navigate('/');
+      console.log('✅ Connexion réussie, données reçues:', result);
+      console.log('🚀 Redirection vers le tableau de bord...');
+      
+      // On force la redirection vers le dashboard pour éviter tout bug de navigation React
+      window.location.href = '/dashboard';
+      
     } catch (err) {
       console.error('❌ Erreur de connexion:', err);
       setErreur(err.message || 'Erreur de connexion. Vérifiez vos identifiants.');
-    } finally {
-      setChargement(false);
+      setChargement(false); // On arrête le chargement seulement en cas d'erreur
     }
   };
 
