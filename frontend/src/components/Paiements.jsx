@@ -5,36 +5,58 @@ import { API_URL, getHeaders } from '../config';
 export default function Paiements() {
   const [paiements, setPaiements] = useState([]);
   const [enfants, setEnfants] = useState([]);
-  const [groupes, setGroupes] = useState([]);
+  const [groupesEnfant, setGroupesEnfant] = useState([]);
   const [form, setForm] = useState({ enfant: '', groupe: '', periode: '', montant: '', modePaiement: 'especes' });
+  const [erreur, setErreur] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([
       fetch(`${API_URL}/api/paiements`, { headers: getHeaders() }).then(r => r.json()),
-      fetch(`${API_URL}/api/enfants`, { headers: getHeaders() }).then(r => r.json()),
-      fetch(`${API_URL}/api/groupes`, { headers: getHeaders() }).then(r => r.json())
-    ]).then(([p, e, g]) => {
+      fetch(`${API_URL}/api/enfants`, { headers: getHeaders() }).then(r => r.json())
+    ]).then(([p, e]) => {
       setPaiements(p);
       setEnfants(e);
-      setGroupes(g);
     });
   }, []);
 
+  // Quand on sélectionne un enfant, charger ses groupes
+  useEffect(() => {
+    if (form.enfant) {
+      fetch(`${API_URL}/api/paiements/groupes-enfant/${form.enfant}`, { headers: getHeaders() })
+        .then(res => res.json())
+        .then(setGroupesEnfant);
+      setForm(prev => ({ ...prev, groupe: '' }));
+    } else {
+      setGroupesEnfant([]);
+    }
+  }, [form.enfant]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErreur('');
+    
     const res = await fetch(`${API_URL}/api/paiements`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(form)
     });
+    
     const data = await res.json();
+    
+    if (!res.ok) {
+      setErreur(data.message);
+      return;
+    }
+    
     navigate(`/recu/${data._id}`);
   };
 
   return (
     <div style={{ padding: '20px' }}>
       <h1>💰 Gestion des Paiements</h1>
+      
+      {erreur && <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', marginBottom: '15px' }}>❌ {erreur}</div>}
       
       <form onSubmit={handleSubmit} style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '10px' }}>
         <h3>Nouveau Paiement</h3>
@@ -43,9 +65,13 @@ export default function Paiements() {
             <option value="">Enfant</option>
             {enfants.map(e => <option key={e._id} value={e._id}>{e.prenom} {e.nom}</option>)}
           </select>
-          <select value={form.groupe} onChange={e => setForm({...form, groupe: e.target.value})} required style={selectStyle}>
-            <option value="">Groupe</option>
-            {groupes.map(g => <option key={g._id} value={g._id}>{g.nom}</option>)}
+          <select value={form.groupe} onChange={e => setForm({...form, groupe: e.target.value})} required style={selectStyle} disabled={!form.enfant}>
+            <option value="">Groupe (sélectionnez d'abord un enfant)</option>
+            {groupesEnfant.map(a => (
+              <option key={a._id} value={a.groupe._id}>
+                {a.groupe.nom} ({a.groupe.activite})
+              </option>
+            ))}
           </select>
           <input placeholder="Période (ex: Septembre 2026)" value={form.periode} onChange={e => setForm({...form, periode: e.target.value})} required style={inputStyle} />
           <input type="number" placeholder="Montant (DT)" value={form.montant} onChange={e => setForm({...form, montant: e.target.value})} required style={inputStyle} />

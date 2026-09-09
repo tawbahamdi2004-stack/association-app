@@ -7,6 +7,7 @@ export default function Presences() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [enfants, setEnfants] = useState([]);
   const [presences, setPresences] = useState({});
+  const [erreur, setErreur] = useState('');
 
   useEffect(() => {
     fetch(`${API_URL}/api/groupes`, { headers: getHeaders() })
@@ -16,6 +17,7 @@ export default function Presences() {
 
   useEffect(() => {
     if (groupeId) {
+      setErreur('');
       Promise.all([
         fetch(`${API_URL}/api/presences/enfants/${groupeId}`, { headers: getHeaders() }).then(r => r.json()),
         fetch(`${API_URL}/api/presences?groupeId=${groupeId}&date=${date}`, { headers: getHeaders() }).then(r => r.json())
@@ -34,18 +36,30 @@ export default function Presences() {
   };
 
   const enregistrer = async () => {
+    setErreur('');
     const payloadArray = Object.entries(presences).map(([enfantId, present]) => ({ enfantId, present }));
-    await fetch(`${API_URL}/api/presences`, {
+    
+    const res = await fetch(`${API_URL}/api/presences`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ groupeId, date, presences: payloadArray })
     });
+    
+    const data = await res.json();
+    
+    if (!res.ok) {
+      setErreur(data.message);
+      return;
+    }
+    
     alert('✅ Présences enregistrées !');
   };
 
   return (
     <div style={{ padding: '20px' }}>
       <h1>📅 Gestion des Présences</h1>
+      
+      {erreur && <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', marginBottom: '15px' }}>❌ {erreur}</div>}
       
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <select value={groupeId} onChange={e => setGroupeId(e.target.value)} style={{ flex: 1, padding: '10px' }}>

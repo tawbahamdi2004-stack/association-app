@@ -8,6 +8,7 @@ export default function GroupeDetail() {
   const [affectations, setAffectations] = useState([]);
   const [enfants, setEnfants] = useState([]);
   const [enfantSelectionne, setEnfantSelectionne] = useState('');
+  const [erreur, setErreur] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +24,9 @@ export default function GroupeDetail() {
 
   const affecterEnfant = async () => {
     if (!enfantSelectionne) return;
-    await fetch(`${API_URL}/api/affectations`, {
+    setErreur('');
+    
+    const res = await fetch(`${API_URL}/api/affectations`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -33,10 +36,18 @@ export default function GroupeDetail() {
         dateFin: groupe.dateFin
       })
     });
-    setEnfantSelectionne('');
-    const res = await fetch(`${API_URL}/api/groupes/${id}`, { headers: getHeaders() });
+    
     const data = await res.json();
-    setAffectations(data.affectations);
+    
+    if (!res.ok) {
+      setErreur(data.message);
+      return;
+    }
+    
+    setEnfantSelectionne('');
+    const resGroupe = await fetch(`${API_URL}/api/groupes/${id}`, { headers: getHeaders() });
+    const groupeData = await resGroupe.json();
+    setAffectations(groupeData.affectations);
   };
 
   if (!groupe) return <p>Chargement...</p>;
@@ -51,6 +62,8 @@ export default function GroupeDetail() {
         <p><strong>Période:</strong> {new Date(groupe.dateDebut).toLocaleDateString()} - {new Date(groupe.dateFin).toLocaleDateString()}</p>
         <p><strong>Nombre d'enfants:</strong> {affectations.length}</p>
       </div>
+
+      {erreur && <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', marginBottom: '15px' }}>❌ {erreur}</div>}
 
       <div style={{ marginBottom: '20px', padding: '20px', border: '1px solid #ddd', borderRadius: '10px' }}>
         <h3>Affecter un enfant</h3>

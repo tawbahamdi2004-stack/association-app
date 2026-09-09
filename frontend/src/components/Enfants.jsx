@@ -5,6 +5,8 @@ import { API_URL, getHeaders } from '../config';
 export default function Enfants() {
   const [enfants, setEnfants] = useState([]);
   const [form, setForm] = useState({ nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '' });
+  const [erreur, setErreur] = useState('');
+  const [succes, setSucces] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,14 +17,27 @@ export default function Enfants() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await fetch(`${API_URL}/api/enfants`, {
+    setErreur('');
+    setSucces('');
+    
+    const res = await fetch(`${API_URL}/api/enfants`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(form)
     });
+    
+    const data = await res.json();
+    
+    if (!res.ok) {
+      setErreur(data.message);
+      return;
+    }
+    
+    setSucces(`${data.prenom} ${data.nom} ajouté avec succès !`);
     setForm({ nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '' });
-    const res = await fetch(`${API_URL}/api/enfants`, { headers: getHeaders() });
-    setEnfants(await res.json());
+    
+    const resList = await fetch(`${API_URL}/api/enfants`, { headers: getHeaders() });
+    setEnfants(await resList.json());
   };
 
   const supprimer = async (id) => {
@@ -36,6 +51,9 @@ export default function Enfants() {
     <div style={{ padding: '20px' }}>
       <button onClick={() => navigate('/')} style={{ marginBottom: '20px' }}>← Retour</button>
       <h1>👧 Gestion des Enfants</h1>
+      
+      {erreur && <div style={{ padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', marginBottom: '15px' }}> {erreur}</div>}
+      {succes && <div style={{ padding: '10px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '5px', marginBottom: '15px' }}>✅ {succes}</div>}
       
       <form onSubmit={handleSubmit} style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '10px' }}>
         <h3>Nouvel Enfant</h3>
